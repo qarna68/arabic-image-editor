@@ -13,19 +13,18 @@
   .app { max-width: 600px; margin: 0 auto; padding: 12px; }
   h1 { font-size: 18px; text-align: center; margin: 8px 0 16px; color: #f5c542; }
   .card { background: #1a1d24; border-radius: 14px; padding: 12px; margin-bottom: 12px; }
-  .card label { display: block; font-size: 13px; margin-bottom: 6px; color: #a8b0bd; }
-  input[type="file"] { display: none; }
-  .btn { display: block; width: 100%; padding: 12px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; background: #2a3140; color: #e8eaed; margin-top: 8px; transition: background .2s; }
+  .card > label { display: block; font-size: 13px; margin-bottom: 6px; color: #a8b0bd; }
+  .btn { display: block; width: 100%; padding: 12px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; background: #2a3140; color: #e8eaed; margin-top: 8px; transition: background .2s; font-family: inherit; }
   .btn:active { background: #3a4356; }
   .btn-primary { background: #f5c542; color: #111; }
   .btn-primary:active { background: #d4a92e; }
   .btn-danger { background: #d9534f; color: #fff; }
   textarea, select, input[type="text"] { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #2f3542; background: #0f1115; color: #e8eaed; font-size: 15px; font-family: inherit; }
   textarea { resize: vertical; min-height: 60px; }
-  select { appearance: none; }
+  select { appearance: none; -webkit-appearance: none; }
   .row { display: flex; gap: 8px; }
   .row > * { flex: 1; }
-  .canvas-wrap { position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+  .canvas-wrap { position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 12px; min-height: 200px; }
   #canvas { display: block; width: 100%; height: auto; touch-action: none; }
   .filter-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
   .filter-row label { flex: 0 0 70px; font-size: 13px; margin: 0; }
@@ -38,6 +37,36 @@
   .progress-bar { height: 100%; width: 0%; background: #f5c542; transition: width .1s; }
   video#preview { width: 100%; border-radius: 10px; margin-top: 8px; background: #000; }
   .hint { font-size: 12px; color: #6c7689; margin-top: 6px; line-height: 1.5; }
+
+  /* ==== زر ملف يعمل بموثوقية على Safari/iOS ==== */
+  .file-trigger {
+    position: relative;
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    background: #2a3140;
+    color: #e8eaed;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+    overflow: hidden;
+    cursor: pointer;
+    margin-top: 8px;
+    user-select: none;
+  }
+  .file-trigger:active { background: #3a4356; }
+  .file-trigger input[type="file"] {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    font-size: 100px; /* ضروري لعمل اللمس في بعض إصدارات Safari */
+  }
+
+  .color-input { width: 100%; height: 38px; border: none; border-radius: 8px; background: #0f1115; padding: 2px; }
+  .range-input { width: 100%; accent-color: #f5c542; }
 </style>
 </head>
 <body>
@@ -47,8 +76,10 @@
   <!-- اختيار الصورة -->
   <div class="card">
     <label>1) اختر صورة من الألبوم</label>
-    <button class="btn" id="pickImageBtn">اختيار صورة</button>
-    <input type="file" id="imageInput" accept="image/*">
+    <label class="file-trigger">
+      اختيار صورة
+      <input type="file" id="imageInput" accept="image/*">
+    </label>
     <div class="status" id="imageStatus">لم يتم اختيار صورة</div>
   </div>
 
@@ -65,18 +96,21 @@
       <option value="Amiri">نسخ — Amiri</option>
       <option value="Aref Ruqaa">رقعة — Aref Ruqaa</option>
       <option value="Lateef">نسخ بديل — Lateef</option>
-      <option value="__custom__">خط مخصص (حمّل من جهازك)</option>
     </select>
-    <input type="file" id="fontFileInput" accept=".ttf,.otf,.woff,.woff2">
-    <div class="hint" id="customFontHint">اختر "خط مخصص" لتحميل ملف .ttf من جهازك (للديواني والثلث).</div>
+    <label class="file-trigger">
+      تحميل خط مخصص (.ttf / .otf)
+      <input type="file" id="fontFileInput" accept=".ttf,.otf,.woff,.woff2">
+    </label>
+    <div class="hint" id="customFontHint">استخدم هذا الخيار لتحميل خط الديواني أو الثلث من جهازك.</div>
+
     <div class="row" style="margin-top:8px;">
       <div>
         <label>حجم الخط</label>
-        <input type="range" id="fontSize" min="20" max="200" value="60" style="width:100%;accent-color:#f5c542;">
+        <input type="range" id="fontSize" min="20" max="200" value="60" class="range-input">
       </div>
       <div>
         <label>لون النص</label>
-        <input type="color" id="textColor" value="#ffffff" style="width:100%;height:38px;border:none;border-radius:8px;background:#0f1115;">
+        <input type="color" id="textColor" value="#ffffff" class="color-input">
       </div>
     </div>
   </div>
@@ -107,8 +141,10 @@
   <!-- الصوت -->
   <div class="card">
     <label>6) مقطع صوتي (اختياري)</label>
-    <button class="btn" idcanvas="pickAudioBtn">اختيار ملف صوتي</button>
- id="canvas"></    <canvasinput type="file" id="audioInput" accept="audio/*">
+    <label class="file-trigger">
+      اختيار ملف صوتي
+      <input type="file" id="audioInput" accept="audio/*">
+    </label>
     <div class="status" id="audioStatus">لم يتم اختيار صوت</div>
     <button class="btn btn-danger hidden" id="removeAudioBtn" style="margin-top:8px;">إزالة الصوت</button>
   </div>
@@ -117,20 +153,17 @@
   <div class="card">
     <label>المعاينة — اسحب النص بإصبعك لتحريكه</label>
     <div class="canvas-wrap">
-      <>
+      <canvas id="canvas"></canvas>
     </div>
   </div>
 
   <!-- التصدير -->
   <div class="card">
     <label>7) التصدير والمشاركة</label>
-    <div class="row">
-      <div>
-        <label>مدة الفيديو (ثانية)</label>
-        <input type="range" id="duration" min="2" max="15" value="5" style="width:100%;accent-color:#f5c542;">
-        <div class="badge" id="durationBadge">5 ثواني</div>
-      </div>
-    </div>
+    <label>مدة الفيديو (ثانية)</label>
+    <input type="range" id="duration" min="2" max="15" value="5" class="range-input">
+    <div class="badge" id="durationBadge">5 ثواني</div>
+
     <button class="btn btn-primary" id="exportBtn">🎬 تصدير فيديو</button>
     <div class="progress-wrap" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
     <button class="btn hidden" id="shareBtn">📤 مشاركة الفيديو</button>
@@ -153,7 +186,6 @@
   const ctx = canvas.getContext('2d');
 
   const imageInput = document.getElementById('imageInput');
-  const pickImageBtn = document.getElementById('pickImageBtn');
   const imageStatus = document.getElementById('imageStatus');
 
   const textInput = document.getElementById('textInput');
@@ -172,7 +204,6 @@
   const animationSelect = document.getElementById('animationSelect');
 
   const audioInput = document.getElementById('audioInput');
-  const pickAudioBtn = document.getElementById('pickAudioBtn');
   const audioStatus = document.getElementById('audioStatus');
   const removeAudioBtn = document.getElementById('removeAudioBtn');
 
@@ -189,31 +220,26 @@
 
   // ===== الحالة =====
   const state = {
-    image: null,          // HTMLImageElement
-    imageEl: null,        // original image
-    customFontName: null, // اسم الخط المخصص المحمّل
+    image: null,
+    customFontName: null,
     audioURL: null,
     audioEl: null,
-    textPos: { x: 0.5, y: 0.5 }, // نسبي إلى أبعاد الصورة
+    textPos: { x: 0.5, y: 0.5 },
     dragging: false,
     dragOffset: { x: 0, y: 0 },
-    animStart: 0,
     rafId: null,
     recordedBlob: null,
     lastVideoURL: null
   };
 
   // ===== تحميل الصورة =====
-  pickImageBtn.addEventListener('click', () => imageInput.click());
   imageInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files && e.target.files[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
       state.image = img;
-      state.imageEl = img;
-      // ضبط أبعاد الكانفس: حد أقصى 1080 بكسل للعرض
       const maxDim = 1080;
       let w = img.width, h = img.height;
       if (w > maxDim || h > maxDim) {
@@ -225,10 +251,11 @@
       canvas.height = h;
       state.textPos = { x: 0.5, y: 0.5 };
       imageStatus.textContent = `تم اختيار صورة (${img.width}×${img.height})`;
+      imageStatus.style.color = '#7ed957';
       draw();
       startAnimationLoop();
     };
-    img.onerror = () => { imageStatus.textContent = 'فشل تحميل الصورة'; };
+    img.onerror = () => { imageStatus.textContent = 'فشل تحميل الصورة'; imageStatus.style.color = '#d9534f'; };
     img.src = url;
   });
 
@@ -238,17 +265,10 @@
   textColor.addEventListener('input', draw);
 
   // ===== الخط =====
-  fontSelect.addEventListener('change', async () => {
-    if (fontSelect.value === '__custom__') {
-      fontFileInput.click();
-    } else {
-      state.customFontName = null;
-      draw();
-    }
-  });
+  fontSelect.addEventListener('change', () => { draw(); });
 
   fontFileInput.addEventListener('change', async (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files && e.target.files[0];
     if (!file) return;
     const name = 'CustomFont_' + Date.now();
     try {
@@ -257,11 +277,10 @@
       await font.load();
       document.fonts.add(font);
       state.customFontName = name;
-      // تحديث قائمة الخطوط
       const opt = document.createElement('option');
       opt.value = name;
       opt.textContent = 'مخصص — ' + file.name.replace(/\.[^.]+$/, '');
-      fontSelect.insertBefore(opt, fontSelect.lastElementChild);
+      fontSelect.appendChild(opt);
       fontSelect.value = name;
       customFontHint.textContent = `تم تحميل الخط: ${file.name}`;
       customFontHint.style.color = '#7ed957';
@@ -279,23 +298,23 @@
 
   // ===== الحركة =====
   animationSelect.addEventListener('change', () => {
-    state.animStart = performance.now();
     startAnimationLoop();
   });
 
   // ===== الصوت =====
-  pickAudioBtn.addEventListener('click', () => audioInput.click());
   audioInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files && e.target.files[0];
     if (!file) return;
     if (state.audioURL) URL.revokeObjectURL(state.audioURL);
     state.audioURL = URL.createObjectURL(file);
     state.audioEl = new Audio(state.audioURL);
     state.audioEl.loop = true;
+    state.audioEl.preload = 'auto';
     audioStatus.textContent = `تم اختيار: ${file.name}`;
     audioStatus.style.color = '#7ed957';
     removeAudioBtn.classList.remove('hidden');
   });
+
   removeAudioBtn.addEventListener('click', () => {
     if (state.audioURL) URL.revokeObjectURL(state.audioURL);
     state.audioURL = null;
@@ -330,33 +349,36 @@
     }
   }
 
+  function getCurrentFontFamily() {
+    return (state.customFontName && fontSelect.value === state.customFontName)
+      ? state.customFontName
+      : fontSelect.value;
+  }
+
   function draw(t = performance.now()) {
     if (!state.image) {
-      // خلفية رمادية عند عدم وجود صورة
       ctx.fillStyle = '#222';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, canvas.width || 300, canvas.height || 200);
       ctx.fillStyle = '#666';
       ctx.font = '20px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('اختر صورة أولاً', canvas.width / 2, canvas.height / 2);
+      ctx.fillText('اختر صورة أولاً', (canvas.width || 300) / 2, (canvas.height || 200) / 2);
       return;
     }
 
     const w = canvas.width, h = canvas.height;
 
-    // 1) ارسم الصورة مع الفلاتر
+    // ارسم الصورة مع الفلاتر
     ctx.save();
     ctx.filter = getFilterString();
     ctx.drawImage(state.image, 0, 0, w, h);
     ctx.restore();
 
-    // 2) ارسم النص
+    // ارسم النص
     const text = textInput.value;
     if (!text.trim()) return;
 
-    const fontFamily = (fontSelect.value === '__custom__')
-      ? (state.customFontName || 'Amiri')
-      : fontSelect.value;
+    const fontFamily = getCurrentFontFamily();
     const fs = parseInt(fontSize.value, 10);
     ctx.font = `${fs}px "${fontFamily}", sans-serif`;
     ctx.textAlign = 'center';
@@ -373,7 +395,6 @@
     ctx.scale(anim.scale, anim.scale);
     ctx.globalAlpha = anim.alpha;
 
-    // ظل خفيف لتحسين القراءة
     ctx.shadowColor = 'rgba(0,0,0,0.6)';
     ctx.shadowBlur = 8;
     ctx.shadowOffsetX = 2;
@@ -382,7 +403,6 @@
     ctx.restore();
   }
 
-  // ===== حلقة الحركة =====
   function startAnimationLoop() {
     if (state.rafId) cancelAnimationFrame(state.rafId);
     const loop = (t) => {
@@ -412,8 +432,7 @@
     const ty = state.textPos.y * h;
     const text = textInput.value;
     if (!text.trim()) return false;
-    const fontFamily = (fontSelect.value === '__custom__')
-      ? (state.customFontName || 'Amiri') : fontSelect.value;
+    const fontFamily = getCurrentFontFamily();
     const fs = parseInt(fontSize.value, 10);
     ctx.save();
     ctx.font = `${fs}px "${fontFamily}", sans-serif`;
@@ -421,7 +440,7 @@
     ctx.restore();
     const tw = metrics.width;
     const th = fs * 1.2;
-    return Math.abs(point.x - tx) < tw / 2 + 10 && Math.abs(point.y - ty) < th / 2 + 10;
+    return Math.abs(point.x - tx) < tw / 2 + 15 && Math.abs(point.y - ty) < th / 2 + 15;
   }
 
   canvas.addEventListener('touchstart', (e) => {
@@ -451,7 +470,7 @@
 
   canvas.addEventListener('touchend', () => { state.dragging = false; });
 
-  // دعم الماوس للاختبار على الحاسوب
+  // دعم الماوس (للاختبار على الحاسوب)
   canvas.addEventListener('mousedown', (e) => {
     if (!state.image) return;
     const p = getCanvasPoint(e);
@@ -497,18 +516,18 @@
     const duration = parseInt(durationRange.value, 10) * 1000;
     const fps = 30;
 
-    // 1) جهّز بث الكانفس
     const stream = canvas.captureStream(fps);
 
-    // 2) أضف الصوت إن وُجد
+    // إضافة الصوت إن وُجد
     let audioCtx = null;
     if (state.audioEl) {
       try {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
         const src = audioCtx.createMediaElementSource(state.audioEl);
         const dest = audioCtx.createMediaStreamDestination();
         src.connect(dest);
-        src.connect(audioCtx.destination); // للسماع أثناء التسجيل
+        src.connect(audioCtx.destination);
         state.audioEl.currentTime = 0;
         await state.audioEl.play();
         dest.stream.getAudioTracks().forEach(track => stream.addTrack(track));
@@ -517,7 +536,6 @@
       }
     }
 
-    // 3) اختر mimeType المدعوم
     const candidates = [
       'video/mp4;codecs=h264,aac',
       'video/mp4',
@@ -539,16 +557,12 @@
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
 
     const done = new Promise((resolve) => {
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: mimeType });
-        resolve(blob);
-      };
+      recorder.onstop = () => resolve(new Blob(chunks, { type: mimeType }));
     });
 
     recorder.start();
     const startT = performance.now();
 
-    // 4) تقدّم شريط التقدم
     const tick = () => {
       const elapsed = performance.now() - startT;
       const p = Math.min(1, elapsed / duration);
@@ -578,9 +592,8 @@
       exportStatus.textContent = `تم التصدير (${(blob.size/1024/1024).toFixed(2)} م.ب)`;
       exportStatus.style.color = '#7ed957';
 
-      // فعّل أزرار المشاركة والتنزيل
-      downloadBtn.classList.remove('hidden');
       const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+      downloadBtn.classList.remove('hidden');
       downloadBtn.onclick = () => {
         const a = document.createElement('a');
         a.href = url;
@@ -595,9 +608,7 @@
             const file = new File([blob], 'edited.' + ext, { type: mimeType });
             await navigator.share({ files: [file], title: 'تعديل الصورة' });
           } catch (err) {
-            if (err.name !== 'AbortError') {
-              alert('فشلت المشاركة: ' + err.message);
-            }
+            if (err.name !== 'AbortError') alert('فشلت المشاركة: ' + err.message);
           }
         };
       } else {
@@ -611,14 +622,8 @@
   });
 
   // ===== بدء =====
-  // ارسم خلفية أولية
   draw();
   startAnimationLoop();
-
-  // حدّث حجم الكانفس عند تغيير النافذة (اختياري)
-  window.addEventListener('resize', () => {
-    // لا نغيّر أبعاد الكانفس تلقائيًا للحفاظ على الدقة
-  });
 
 })();
 </script>
