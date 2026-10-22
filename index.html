@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>محرر النص على الصورة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Lateef&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; font-family: -apple-system, 'Segoe UI', Tahoma, sans-serif; background: #0f1115; color: #e8eaed; min-height: 100vh; }
+  .app { max-width: 600px; margin: 0 auto; padding: 12px; }
+  h1 { font-size: 18px; text-align: center; margin: 8px 0 16px; color: #f5c542; }
+  .card { background: #1a1d24; border-radius: 14px; padding: 12px; margin-bottom: 12px; }
+  .card label { display: block; font-size: 13px; margin-bottom: 6px; color: #a8b0bd; }
+  input[type="file"] { display: none; }
+  .btn { display: block; width: 100%; padding: 12px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; background: #2a3140; color: #e8eaed; margin-top: 8px; transition: background .2s; }
+  .btn:active { background: #3a4356; }
+  .btn-primary { background: #f5c542; color: #111; }
+  .btn-primary:active { background: #d4a92e; }
+  .btn-danger { background: #d9534f; color: #fff; }
+  textarea, select, input[type="text"] { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #2f3542; background: #0f1115; color: #e8eaed; font-size: 15px; font-family: inherit; }
+  textarea { resize: vertical; min-height: 60px; }
+  select { appearance: none; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+  .canvas-wrap { position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+  #canvas { display: block; width: 100%; height: auto; touch-action: none; }
+  .filter-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .filter-row label { flex: 0 0 70px; font-size: 13px; margin: 0; }
+  .filter-row input[type="range"] { flex: 1; accent-color: #f5c542; }
+  .status { font-size: 13px; color: #6c7689; text-align: center; margin-top: 8px; min-height: 18px; }
+  .hidden { display: none !important; }
+  .badge { display: inline-block; background: #2a3140; padding: 2px 8px; border-radius: 6px; font-size: 12px; color: #a8b0bd; margin-top: 4px; }
+  .progress-wrap { height: 6px; background: #2a3140; border-radius: 3px; overflow: hidden; margin-top: 8px; display: none; }
+  .progress-wrap.active { display: block; }
+  .progress-bar { height: 100%; width: 0%; background: #f5c542; transition: width .1s; }
+  video#preview { width: 100%; border-radius: 10px; margin-top: 8px; background: #000; }
+  .hint { font-size: 12px; color: #6c7689; margin-top: 6px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>🖼️ محرر النص على الصورة</h1>
+
+  <!-- اختيار الصورة -->
+  <div class="card">
+    <label>1) اختر صورة من الألبوم</label>
+    <button class="btn" id="pickImageBtn">اختيار صورة</button>
+    <input type="file" id="imageInput" accept="image/*">
+    <div class="status" id="imageStatus">لم يتم اختيار صورة</div>
+  </div>
+
+  <!-- النص -->
+  <div class="card">
+    <label>2) اكتب النص</label>
+    <textarea id="textInput" placeholder="اكتب النص هنا...">بسم الله الرحمن الرحيم</textarea>
+  </div>
+
+  <!-- الخط -->
+  <div class="card">
+    <label>3) الخط</label>
+    <select id="fontSelect">
+      <option value="Amiri">نسخ — Amiri</option>
+      <option value="Aref Ruqaa">رقعة — Aref Ruqaa</option>
+      <option value="Lateef">نسخ بديل — Lateef</option>
+      <option value="__custom__">خط مخصص (حمّل من جهازك)</option>
+    </select>
+    <input type="file" id="fontFileInput" accept=".ttf,.otf,.woff,.woff2">
+    <div class="hint" id="customFontHint">اختر "خط مخصص" لتحميل ملف .ttf من جهازك (للديواني والثلث).</div>
+    <div class="row" style="margin-top:8px;">
+      <div>
+        <label>حجم الخط</label>
+        <input type="range" id="fontSize" min="20" max="200" value="60" style="width:100%;accent-color:#f5c542;">
+      </div>
+      <div>
+        <label>لون النص</label>
+        <input type="color" id="textColor" value="#ffffff" style="width:100%;height:38px;border:none;border-radius:8px;background:#0f1115;">
+      </div>
+    </div>
+  </div>
+
+  <!-- الفلاتر -->
+  <div class="card">
+    <label>4) فلاتر الصورة</label>
+    <div class="filter-row"><label>سطوع</label><input type="range" id="brightness" min="20" max="200" value="100"></div>
+    <div class="filter-row"><label>تباين</label><input type="range" id="contrast" min="20" max="200" value="100"></div>
+    <div class="filter-row"><label>تشبع</label><input type="range" id="saturate" min="0" max="300" value="100"></div>
+    <div class="filter-row"><label>سيبيا</label><input type="range" id="sepia" min="0" max="100" value="0"></div>
+    <div class="filter-row"><label>رمادي</label><input type="range" id="grayscale" min="0" max="100" value="0"></div>
+  </div>
+
+  <!-- الحركة -->
+  <div class="card">
+    <label>5) حركة النص</label>
+    <select id="animationSelect">
+      <option value="none">بدون حركة</option>
+      <option value="pulse">نبض</option>
+      <option value="fade">ظهور تدريجي</option>
+      <option value="shake">اهتزاز</option>
+      <option value="rotate">دوران خفيف</option>
+      <option value="float">طفو</option>
+    </select>
+  </div>
+
+  <!-- الصوت -->
+  <div class="card">
+    <label>6) مقطع صوتي (اختياري)</label>
+    <button class="btn" idcanvas="pickAudioBtn">اختيار ملف صوتي</button>
+ id="canvas"></    <canvasinput type="file" id="audioInput" accept="audio/*">
+    <div class="status" id="audioStatus">لم يتم اختيار صوت</div>
+    <button class="btn btn-danger hidden" id="removeAudioBtn" style="margin-top:8px;">إزالة الصوت</button>
+  </div>
+
+  <!-- المعاينة -->
+  <div class="card">
+    <label>المعاينة — اسحب النص بإصبعك لتحريكه</label>
+    <div class="canvas-wrap">
+      <>
+    </div>
+  </div>
+
+  <!-- التصدير -->
+  <div class="card">
+    <label>7) التصدير والمشاركة</label>
+    <div class="row">
+      <div>
+        <label>مدة الفيديو (ثانية)</label>
+        <input type="range" id="duration" min="2" max="15" value="5" style="width:100%;accent-color:#f5c542;">
+        <div class="badge" id="durationBadge">5 ثواني</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="exportBtn">🎬 تصدير فيديو</button>
+    <div class="progress-wrap" id="progressWrap"><div class="progress-bar" id="progressBar"></div></div>
+    <button class="btn hidden" id="shareBtn">📤 مشاركة الفيديو</button>
+    <button class="btn hidden" id="downloadBtn">⬇️ تنزيل الفيديو</button>
+    <video id="preview" class="hidden" controls playsinline></video>
+    <div class="status" id="exportStatus"></div>
+  </div>
+
+  <div class="hint" style="text-align:center;padding:8px;">
+    يعمل هذا التطبيق بالكامل في متصفحك. لا تُرسل صورك أو صوتك إلى أي مكان.
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ===== عناصر DOM =====
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  const imageInput = document.getElementById('imageInput');
+  const pickImageBtn = document.getElementById('pickImageBtn');
+  const imageStatus = document.getElementById('imageStatus');
+
+  const textInput = document.getElementById('textInput');
+  const fontSelect = document.getElementById('fontSelect');
+  const fontFileInput = document.getElementById('fontFileInput');
+  const customFontHint = document.getElementById('customFontHint');
+  const fontSize = document.getElementById('fontSize');
+  const textColor = document.getElementById('textColor');
+
+  const brightness = document.getElementById('brightness');
+  const contrast = document.getElementById('contrast');
+  const saturate = document.getElementById('saturate');
+  const sepia = document.getElementById('sepia');
+  const grayscale = document.getElementById('grayscale');
+
+  const animationSelect = document.getElementById('animationSelect');
+
+  const audioInput = document.getElementById('audioInput');
+  const pickAudioBtn = document.getElementById('pickAudioBtn');
+  const audioStatus = document.getElementById('audioStatus');
+  const removeAudioBtn = document.getElementById('removeAudioBtn');
+
+  const durationRange = document.getElementById('duration');
+  const durationBadge = document.getElementById('durationBadge');
+
+  const exportBtn = document.getElementById('exportBtn');
+  const progressWrap = document.getElementById('progressWrap');
+  const progressBar = document.getElementById('progressBar');
+  const shareBtn = document.getElementById('shareBtn');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const previewVideo = document.getElementById('preview');
+  const exportStatus = document.getElementById('exportStatus');
+
+  // ===== الحالة =====
+  const state = {
+    image: null,          // HTMLImageElement
+    imageEl: null,        // original image
+    customFontName: null, // اسم الخط المخصص المحمّل
+    audioURL: null,
+    audioEl: null,
+    textPos: { x: 0.5, y: 0.5 }, // نسبي إلى أبعاد الصورة
+    dragging: false,
+    dragOffset: { x: 0, y: 0 },
+    animStart: 0,
+    rafId: null,
+    recordedBlob: null,
+    lastVideoURL: null
+  };
+
+  // ===== تحميل الصورة =====
+  pickImageBtn.addEventListener('click', () => imageInput.click());
+  imageInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      state.image = img;
+      state.imageEl = img;
+      // ضبط أبعاد الكانفس: حد أقصى 1080 بكسل للعرض
+      const maxDim = 1080;
+      let w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) {
+        const r = Math.min(maxDim / w, maxDim / h);
+        w = Math.round(w * r);
+        h = Math.round(h * r);
+      }
+      canvas.width = w;
+      canvas.height = h;
+      state.textPos = { x: 0.5, y: 0.5 };
+      imageStatus.textContent = `تم اختيار صورة (${img.width}×${img.height})`;
+      draw();
+      startAnimationLoop();
+    };
+    img.onerror = () => { imageStatus.textContent = 'فشل تحميل الصورة'; };
+    img.src = url;
+  });
+
+  // ===== النص =====
+  textInput.addEventListener('input', draw);
+  fontSize.addEventListener('input', draw);
+  textColor.addEventListener('input', draw);
+
+  // ===== الخط =====
+  fontSelect.addEventListener('change', async () => {
+    if (fontSelect.value === '__custom__') {
+      fontFileInput.click();
+    } else {
+      state.customFontName = null;
+      draw();
+    }
+  });
+
+  fontFileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const name = 'CustomFont_' + Date.now();
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const font = new FontFace(name, arrayBuffer);
+      await font.load();
+      document.fonts.add(font);
+      state.customFontName = name;
+      // تحديث قائمة الخطوط
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = 'مخصص — ' + file.name.replace(/\.[^.]+$/, '');
+      fontSelect.insertBefore(opt, fontSelect.lastElementChild);
+      fontSelect.value = name;
+      customFontHint.textContent = `تم تحميل الخط: ${file.name}`;
+      customFontHint.style.color = '#7ed957';
+      draw();
+    } catch (err) {
+      customFontHint.textContent = 'فشل تحميل الخط: ' + err.message;
+      customFontHint.style.color = '#d9534f';
+    }
+  });
+
+  // ===== الفلاتر =====
+  [brightness, contrast, saturate, sepia, grayscale].forEach(el => {
+    el.addEventListener('input', draw);
+  });
+
+  // ===== الحركة =====
+  animationSelect.addEventListener('change', () => {
+    state.animStart = performance.now();
+    startAnimationLoop();
+  });
+
+  // ===== الصوت =====
+  pickAudioBtn.addEventListener('click', () => audioInput.click());
+  audioInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (state.audioURL) URL.revokeObjectURL(state.audioURL);
+    state.audioURL = URL.createObjectURL(file);
+    state.audioEl = new Audio(state.audioURL);
+    state.audioEl.loop = true;
+    audioStatus.textContent = `تم اختيار: ${file.name}`;
+    audioStatus.style.color = '#7ed957';
+    removeAudioBtn.classList.remove('hidden');
+  });
+  removeAudioBtn.addEventListener('click', () => {
+    if (state.audioURL) URL.revokeObjectURL(state.audioURL);
+    state.audioURL = null;
+    state.audioEl = null;
+    audioInput.value = '';
+    audioStatus.textContent = 'لم يتم اختيار صوت';
+    audioStatus.style.color = '';
+    removeAudioBtn.classList.add('hidden');
+  });
+
+  // ===== مدة التصدير =====
+  durationRange.addEventListener('input', () => {
+    durationBadge.textContent = durationRange.value + ' ثواني';
+  });
+
+  // ===== الرسم =====
+  function getFilterString() {
+    return `brightness(${brightness.value}%) contrast(${contrast.value}%) saturate(${saturate.value}%) sepia(${sepia.value}%) grayscale(${grayscale.value}%)`;
+  }
+
+  function getAnimationTransform(t) {
+    const anim = animationSelect.value;
+    if (anim === 'none') return { scale: 1, alpha: 1, dx: 0, dy: 0, rot: 0 };
+    const phase = (t % 2000) / 2000 * Math.PI * 2;
+    switch (anim) {
+      case 'pulse':  return { scale: 1 + 0.08 * Math.sin(phase), alpha: 1, dx: 0, dy: 0, rot: 0 };
+      case 'fade':   return { scale: 1, alpha: 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(phase)), dx: 0, dy: 0, rot: 0 };
+      case 'shake':  return { scale: 1, alpha: 1, dx: Math.sin(phase * 8) * 3, dy: 0, rot: 0 };
+      case 'rotate': return { scale: 1, alpha: 1, dx: 0, dy: 0, rot: Math.sin(phase) * 0.05 };
+      case 'float':  return { scale: 1, alpha: 1, dx: 0, dy: Math.sin(phase) * 8, rot: 0 };
+      default:       return { scale: 1, alpha: 1, dx: 0, dy: 0, rot: 0 };
+    }
+  }
+
+  function draw(t = performance.now()) {
+    if (!state.image) {
+      // خلفية رمادية عند عدم وجود صورة
+      ctx.fillStyle = '#222';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#666';
+      ctx.font = '20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('اختر صورة أولاً', canvas.width / 2, canvas.height / 2);
+      return;
+    }
+
+    const w = canvas.width, h = canvas.height;
+
+    // 1) ارسم الصورة مع الفلاتر
+    ctx.save();
+    ctx.filter = getFilterString();
+    ctx.drawImage(state.image, 0, 0, w, h);
+    ctx.restore();
+
+    // 2) ارسم النص
+    const text = textInput.value;
+    if (!text.trim()) return;
+
+    const fontFamily = (fontSelect.value === '__custom__')
+      ? (state.customFontName || 'Amiri')
+      : fontSelect.value;
+    const fs = parseInt(fontSize.value, 10);
+    ctx.font = `${fs}px "${fontFamily}", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = textColor.value;
+
+    const tx = state.textPos.x * w;
+    const ty = state.textPos.y * h;
+
+    const anim = getAnimationTransform(t);
+    ctx.save();
+    ctx.translate(tx + anim.dx, ty + anim.dy);
+    ctx.rotate(anim.rot);
+    ctx.scale(anim.scale, anim.scale);
+    ctx.globalAlpha = anim.alpha;
+
+    // ظل خفيف لتحسين القراءة
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    ctx.fillText(text, 0, 0);
+    ctx.restore();
+  }
+
+  // ===== حلقة الحركة =====
+  function startAnimationLoop() {
+    if (state.rafId) cancelAnimationFrame(state.rafId);
+    const loop = (t) => {
+      draw(t);
+      state.rafId = requestAnimationFrame(loop);
+    };
+    state.rafId = requestAnimationFrame(loop);
+  }
+
+  // ===== السحب باللمس =====
+  function getCanvasPoint(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  }
+
+  function hitTestText(point) {
+    if (!state.image) return false;
+    const w = canvas.width, h = canvas.height;
+    const tx = state.textPos.x * w;
+    const ty = state.textPos.y * h;
+    const text = textInput.value;
+    if (!text.trim()) return false;
+    const fontFamily = (fontSelect.value === '__custom__')
+      ? (state.customFontName || 'Amiri') : fontSelect.value;
+    const fs = parseInt(fontSize.value, 10);
+    ctx.save();
+    ctx.font = `${fs}px "${fontFamily}", sans-serif`;
+    const metrics = ctx.measureText(text);
+    ctx.restore();
+    const tw = metrics.width;
+    const th = fs * 1.2;
+    return Math.abs(point.x - tx) < tw / 2 + 10 && Math.abs(point.y - ty) < th / 2 + 10;
+  }
+
+  canvas.addEventListener('touchstart', (e) => {
+    if (!state.image) return;
+    const p = getCanvasPoint(e);
+    if (hitTestText(p)) {
+      state.dragging = true;
+      const w = canvas.width, h = canvas.height;
+      state.dragOffset = {
+        x: p.x - state.textPos.x * w,
+        y: p.y - state.textPos.y * h
+      };
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', (e) => {
+    if (!state.dragging) return;
+    const p = getCanvasPoint(e);
+    const w = canvas.width, h = canvas.height;
+    state.textPos = {
+      x: Math.max(0, Math.min(1, (p.x - state.dragOffset.x) / w)),
+      y: Math.max(0, Math.min(1, (p.y - state.dragOffset.y) / h))
+    };
+    e.preventDefault();
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', () => { state.dragging = false; });
+
+  // دعم الماوس للاختبار على الحاسوب
+  canvas.addEventListener('mousedown', (e) => {
+    if (!state.image) return;
+    const p = getCanvasPoint(e);
+    if (hitTestText(p)) {
+      state.dragging = true;
+      const w = canvas.width, h = canvas.height;
+      state.dragOffset = {
+        x: p.x - state.textPos.x * w,
+        y: p.y - state.textPos.y * h
+      };
+    }
+  });
+  canvas.addEventListener('mousemove', (e) => {
+    if (!state.dragging) return;
+    const p = getCanvasPoint(e);
+    const w = canvas.width, h = canvas.height;
+    state.textPos = {
+      x: Math.max(0, Math.min(1, (p.x - state.dragOffset.x) / w)),
+      y: Math.max(0, Math.min(1, (p.y - state.dragOffset.y) / h))
+    };
+  });
+  canvas.addEventListener('mouseup', () => { state.dragging = false; });
+
+  // ===== التصدير =====
+  exportBtn.addEventListener('click', async () => {
+    if (!state.image) {
+      alert('اختر صورة أولاً');
+      return;
+    }
+    if (typeof MediaRecorder === 'undefined') {
+      alert('متصفحك لا يدعم تسجيل الفيديو. استخدم Safari على iOS 14.5+ أو Chrome حديث.');
+      return;
+    }
+
+    exportStatus.textContent = 'جاري التحضير...';
+    exportStatus.style.color = '#a8b0bd';
+    shareBtn.classList.add('hidden');
+    downloadBtn.classList.add('hidden');
+    previewVideo.classList.add('hidden');
+    progressWrap.classList.add('active');
+    progressBar.style.width = '0%';
+
+    const duration = parseInt(durationRange.value, 10) * 1000;
+    const fps = 30;
+
+    // 1) جهّز بث الكانفس
+    const stream = canvas.captureStream(fps);
+
+    // 2) أضف الصوت إن وُجد
+    let audioCtx = null;
+    if (state.audioEl) {
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const src = audioCtx.createMediaElementSource(state.audioEl);
+        const dest = audioCtx.createMediaStreamDestination();
+        src.connect(dest);
+        src.connect(audioCtx.destination); // للسماع أثناء التسجيل
+        state.audioEl.currentTime = 0;
+        await state.audioEl.play();
+        dest.stream.getAudioTracks().forEach(track => stream.addTrack(track));
+      } catch (err) {
+        console.warn('تعذّر دمج الصوت:', err);
+      }
+    }
+
+    // 3) اختر mimeType المدعوم
+    const candidates = [
+      'video/mp4;codecs=h264,aac',
+      'video/mp4',
+      'video/webm;codecs=vp9,opus',
+      'video/webm'
+    ];
+    let mimeType = '';
+    for (const c of candidates) {
+      if (MediaRecorder.isTypeSupported(c)) { mimeType = c; break; }
+    }
+    if (!mimeType) {
+      alert('لا يوجد تنسيق فيديو مدعوم في هذا المتصفح.');
+      if (audioCtx) audioCtx.close();
+      return;
+    }
+
+    const recorder = new MediaRecorder(stream, { mimeType });
+    const chunks = [];
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+    const done = new Promise((resolve) => {
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: mimeType });
+        resolve(blob);
+      };
+    });
+
+    recorder.start();
+    const startT = performance.now();
+
+    // 4) تقدّم شريط التقدم
+    const tick = () => {
+      const elapsed = performance.now() - startT;
+      const p = Math.min(1, elapsed / duration);
+      progressBar.style.width = (p * 100) + '%';
+      if (elapsed < duration) {
+        requestAnimationFrame(tick);
+      } else {
+        recorder.stop();
+        stream.getTracks().forEach(t => t.stop());
+        if (audioCtx) audioCtx.close();
+        if (state.audioEl) state.audioEl.pause();
+      }
+    };
+    requestAnimationFrame(tick);
+
+    try {
+      const blob = await done;
+      state.recordedBlob = blob;
+      const url = URL.createObjectURL(blob);
+      if (state.lastVideoURL) URL.revokeObjectURL(state.lastVideoURL);
+      state.lastVideoURL = url;
+      previewVideo.src = url;
+      previewVideo.classList.remove('hidden');
+      previewVideo.load();
+
+      progressWrap.classList.remove('active');
+      exportStatus.textContent = `تم التصدير (${(blob.size/1024/1024).toFixed(2)} م.ب)`;
+      exportStatus.style.color = '#7ed957';
+
+      // فعّل أزرار المشاركة والتنزيل
+      downloadBtn.classList.remove('hidden');
+      const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+      downloadBtn.onclick = () => {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'edited.' + ext;
+        a.click();
+      };
+
+      if (navigator.canShare && navigator.canShare({ files: [new File([blob], 'edited.' + ext, { type: mimeType })] })) {
+        shareBtn.classList.remove('hidden');
+        shareBtn.onclick = async () => {
+          try {
+            const file = new File([blob], 'edited.' + ext, { type: mimeType });
+            await navigator.share({ files: [file], title: 'تعديل الصورة' });
+          } catch (err) {
+            if (err.name !== 'AbortError') {
+              alert('فشلت المشاركة: ' + err.message);
+            }
+          }
+        };
+      } else {
+        exportStatus.textContent += ' — المتصفح لا يدعم المشاركة المباشرة، استخدم زر التنزيل.';
+      }
+    } catch (err) {
+      exportStatus.textContent = 'فشل التسجيل: ' + err.message;
+      exportStatus.style.color = '#d9534f';
+      progressWrap.classList.remove('active');
+    }
+  });
+
+  // ===== بدء =====
+  // ارسم خلفية أولية
+  draw();
+  startAnimationLoop();
+
+  // حدّث حجم الكانفس عند تغيير النافذة (اختياري)
+  window.addEventListener('resize', () => {
+    // لا نغيّر أبعاد الكانفس تلقائيًا للحفاظ على الدقة
+  });
+
+})();
+</script>
+</body>
+</html>
